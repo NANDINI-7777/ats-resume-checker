@@ -2,6 +2,18 @@
 
 AI-powered ATS Resume Checker and Rewriter — built with React + Vite + Tailwind CSS using **Google Gemini** (free tier).
 
+## Previews
+
+<div align="center">
+  <img src="screenshots/hero.png" width="800" alt="Hero Section" />
+  <br />
+  <img src="screenshots/how-it-works.png" width="800" alt="How It Works" />
+  <br />
+  <img src="screenshots/analyzer.png" width="800" alt="Analyzer Dashboard" />
+  <br />
+  <img src="screenshots/footer.png" width="800" alt="Footer" />
+</div>
+
 ## Features
 
 - 📄 **Upload PDF or DOCX** — client-side parsing, no data sent to any server
