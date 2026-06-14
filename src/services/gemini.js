@@ -177,10 +177,10 @@ function cleanAndParseJSON(responseText) {
 // ─── Model Cascade ────────────────────────────────────────────────────────────
 
 const MODELS_TO_TRY = [
-  "gemini-2.5-flash",
   "gemini-2.0-flash",
-  "gemini-flash-latest",
   "gemini-1.5-flash",
+  "gemini-1.5-pro",
+  "gemini-pro"
 ];
 
 function getClient() {
@@ -204,16 +204,19 @@ export async function analyzeResume(resumeText, jobDescription = "") {
   for (const modelName of MODELS_TO_TRY) {
     try {
       console.log(`[ATS] Analyzing with ${modelName}...`);
+      const isOldModel = modelName === "gemini-pro";
       const model = genAI.getGenerativeModel({
         model: modelName,
-        systemInstruction: ANALYZE_SYSTEM_PROMPT,
+        systemInstruction: isOldModel ? undefined : ANALYZE_SYSTEM_PROMPT,
         generationConfig: { 
-          responseMimeType: "application/json",
+          responseMimeType: isOldModel ? "text/plain" : "application/json",
           temperature: 0.0 
         },
       });
 
-      const prompt = ANALYZE_PROMPT_TEMPLATE(resumeText, jobDescription);
+      const prompt = isOldModel 
+        ? `${ANALYZE_SYSTEM_PROMPT}\n\n${ANALYZE_PROMPT_TEMPLATE(resumeText, jobDescription)}\n\nIMPORTANT: YOU MUST RETURN ONLY RAW JSON.`
+        : ANALYZE_PROMPT_TEMPLATE(resumeText, jobDescription);
       const result = await model.generateContent(prompt);
       const text = result.response.text();
       const parsed = cleanAndParseJSON(text);
@@ -243,16 +246,19 @@ export async function identifyMissingDetails(resumeText, jobDescription = "", an
   for (const modelName of MODELS_TO_TRY) {
     try {
       console.log(`[ATS] Identifying gaps with ${modelName}...`);
+      const isOldModel = modelName === "gemini-pro";
       const model = genAI.getGenerativeModel({
         model: modelName,
-        systemInstruction: GAP_SYSTEM_PROMPT,
+        systemInstruction: isOldModel ? undefined : GAP_SYSTEM_PROMPT,
         generationConfig: { 
-          responseMimeType: "application/json",
+          responseMimeType: isOldModel ? "text/plain" : "application/json",
           temperature: 0.2 
         },
       });
 
-      const prompt = GAP_PROMPT_TEMPLATE(resumeText, jobDescription, analysis);
+      const prompt = isOldModel
+        ? `${GAP_SYSTEM_PROMPT}\n\n${GAP_PROMPT_TEMPLATE(resumeText, jobDescription, analysis)}\n\nIMPORTANT: YOU MUST RETURN ONLY A RAW JSON ARRAY.`
+        : GAP_PROMPT_TEMPLATE(resumeText, jobDescription, analysis);
       const result = await model.generateContent(prompt);
       const text = result.response.text();
 
@@ -282,15 +288,18 @@ export async function rewriteResume(resumeText, jobDescription = "", analysis = 
   for (const modelName of MODELS_TO_TRY) {
     try {
       console.log(`[ATS] Rewriting with ${modelName}...`);
+      const isOldModel = modelName === "gemini-pro";
       const model = genAI.getGenerativeModel({
         model: modelName,
-        systemInstruction: REWRITE_SYSTEM_PROMPT,
+        systemInstruction: isOldModel ? undefined : REWRITE_SYSTEM_PROMPT,
         generationConfig: {
           temperature: 0.2
         }
       });
 
-      const prompt = REWRITE_PROMPT_TEMPLATE(resumeText, jobDescription, analysis, userAnswers);
+      const prompt = isOldModel
+        ? `${REWRITE_SYSTEM_PROMPT}\n\n${REWRITE_PROMPT_TEMPLATE(resumeText, jobDescription, analysis, userAnswers)}`
+        : REWRITE_PROMPT_TEMPLATE(resumeText, jobDescription, analysis, userAnswers);
       const result = await model.generateContent(prompt);
       const text = result.response.text();
       console.log(`[ATS] Rewrite success with ${modelName}`);
