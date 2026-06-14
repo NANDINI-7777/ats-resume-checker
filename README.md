@@ -7,11 +7,22 @@ AI-powered ATS Resume Checker and Rewriter — built with React + Vite + Tailwin
 <div align="center">
   <img src="screenshots/hero.png" width="800" alt="Hero Section" />
   <br />
+  <em>Modern, premium landing page designed to build trust</em>
+  <br /><br />
+  
   <img src="screenshots/how-it-works.png" width="800" alt="How It Works" />
   <br />
+  <em>Clear, 4-step process explaining the AI analysis pipeline</em>
+  <br /><br />
+  
   <img src="screenshots/analyzer.png" width="800" alt="Analyzer Dashboard" />
   <br />
+  <em>Resume upload interface with optional targeted job description</em>
+  <br /><br />
+  
   <img src="screenshots/footer.png" width="800" alt="Footer" />
+  <br />
+  <em>Professional footer with developer credits</em>
 </div>
 
 ## Features
