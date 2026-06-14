@@ -178,9 +178,7 @@ function cleanAndParseJSON(responseText) {
 
 const MODELS_TO_TRY = [
   "gemini-2.0-flash",
-  "gemini-1.5-flash",
-  "gemini-1.5-pro",
-  "gemini-pro"
+  "gemini-1.5-flash"
 ];
 
 function getClient() {
@@ -225,6 +223,12 @@ export async function analyzeResume(resumeText, jobDescription = "") {
     } catch (err) {
       console.warn(`[ATS] ${modelName} failed:`, err.message);
       lastError = err;
+      
+      // Stop cascading for rate limits or auth errors
+      if (err.message?.includes("429") || err.message?.includes("quota") || err.message?.includes("403")) {
+        break;
+      }
+      
       if (err.message?.includes("JSON format") || err.message?.includes("unexpected format")) {
         throw err;
       }
@@ -232,8 +236,8 @@ export async function analyzeResume(resumeText, jobDescription = "") {
   }
 
   let msg = lastError?.message || "AI analysis failed.";
-  if (msg.includes("429")) msg = "API rate limit reached. Please wait a moment and try again.";
-  if (msg.includes("API key")) msg = "Invalid API key. Please check your VITE_GEMINI_API_KEY in .env";
+  if (msg.includes("429") || msg.includes("quota")) msg = "API Rate Limit Reached! Google's Free Tier only allows 15 requests per minute. Please wait 60 seconds and try again.";
+  if (msg.includes("API key") || msg.includes("403")) msg = "Invalid API key. Please check your VITE_GEMINI_API_KEY in .env";
   throw new Error(msg);
 }
 
@@ -271,6 +275,9 @@ export async function identifyMissingDetails(resumeText, jobDescription = "", an
     } catch (err) {
       console.warn(`[ATS] Gap ID ${modelName} failed:`, err.message);
       lastError = err;
+      if (err.message?.includes("429") || err.message?.includes("quota") || err.message?.includes("403")) {
+        break;
+      }
     }
   }
 
@@ -307,10 +314,13 @@ export async function rewriteResume(resumeText, jobDescription = "", analysis = 
     } catch (err) {
       console.warn(`[ATS] Rewrite ${modelName} failed:`, err.message);
       lastError = err;
+      if (err.message?.includes("429") || err.message?.includes("quota") || err.message?.includes("403")) {
+        break;
+      }
     }
   }
 
   let msg = lastError?.message || "Rewrite failed.";
-  if (msg.includes("429")) msg = "API rate limit reached. Please wait a moment and try again.";
+  if (msg.includes("429") || msg.includes("quota")) msg = "API Rate Limit Reached! Google's Free Tier only allows 15 requests per minute. Please wait 60 seconds and try again.";
   throw new Error(msg);
 }
