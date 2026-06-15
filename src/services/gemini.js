@@ -208,8 +208,7 @@ export async function analyzeResume(resumeText, jobDescription = "") {
         systemInstruction: isOldModel ? undefined : ANALYZE_SYSTEM_PROMPT,
         generationConfig: { 
           responseMimeType: isOldModel ? "text/plain" : "application/json",
-          temperature: 0.0,
-          maxOutputTokens: 1024
+          temperature: 0.0
         },
       });
 
@@ -257,8 +256,7 @@ export async function identifyMissingDetails(resumeText, jobDescription = "", an
         systemInstruction: isOldModel ? undefined : GAP_SYSTEM_PROMPT,
         generationConfig: { 
           responseMimeType: isOldModel ? "text/plain" : "application/json",
-          temperature: 0.2,
-          maxOutputTokens: 1024
+          temperature: 0.2
         },
       });
 
@@ -302,8 +300,7 @@ export async function rewriteResume(resumeText, jobDescription = "", analysis = 
         model: modelName,
         systemInstruction: isOldModel ? undefined : REWRITE_SYSTEM_PROMPT,
         generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 2048
+          temperature: 0.2
         }
       });
 
