@@ -195,6 +195,11 @@ export async function analyzeResume(resumeText, jobDescription = "") {
     throw new Error("Resume text is too short. Please check your file uploaded correctly.");
   }
 
+  // Prevent massive files from timing out the AI or causing 503 errors
+  const safeResumeText = resumeText.length > 6000 
+    ? resumeText.slice(0, 6000) + "\n\n[NOTE: Resume was truncated for length. Focus analysis on this first section.]" 
+    : resumeText;
+
   const genAI = getClient();
   let lastError = null;
 
@@ -212,8 +217,8 @@ export async function analyzeResume(resumeText, jobDescription = "") {
       });
 
       const prompt = isOldModel 
-        ? `${ANALYZE_SYSTEM_PROMPT}\n\n${ANALYZE_PROMPT_TEMPLATE(resumeText, jobDescription)}\n\nIMPORTANT: YOU MUST RETURN ONLY RAW JSON.`
-        : ANALYZE_PROMPT_TEMPLATE(resumeText, jobDescription);
+        ? `${ANALYZE_SYSTEM_PROMPT}\n\n${ANALYZE_PROMPT_TEMPLATE(safeResumeText, jobDescription)}\n\nIMPORTANT: YOU MUST RETURN ONLY RAW JSON.`
+        : ANALYZE_PROMPT_TEMPLATE(safeResumeText, jobDescription);
       const result = await model.generateContent(prompt);
       const text = result.response.text();
       const parsed = cleanAndParseJSON(text);
@@ -246,6 +251,8 @@ export async function identifyMissingDetails(resumeText, jobDescription = "", an
   const genAI = getClient();
   let lastError = null;
 
+  const safeResumeText = resumeText.length > 6000 ? resumeText.slice(0, 6000) : resumeText;
+
   for (const modelName of MODELS_TO_TRY) {
     try {
       console.log(`[ATS] Identifying gaps with ${modelName}...`);
@@ -260,8 +267,8 @@ export async function identifyMissingDetails(resumeText, jobDescription = "", an
       });
 
       const prompt = isOldModel
-        ? `${GAP_SYSTEM_PROMPT}\n\n${GAP_PROMPT_TEMPLATE(resumeText, jobDescription, analysis)}\n\nIMPORTANT: YOU MUST RETURN ONLY A RAW JSON ARRAY.`
-        : GAP_PROMPT_TEMPLATE(resumeText, jobDescription, analysis);
+        ? `${GAP_SYSTEM_PROMPT}\n\n${GAP_PROMPT_TEMPLATE(safeResumeText, jobDescription, analysis)}\n\nIMPORTANT: YOU MUST RETURN ONLY A RAW JSON ARRAY.`
+        : GAP_PROMPT_TEMPLATE(safeResumeText, jobDescription, analysis);
       const result = await model.generateContent(prompt);
       const text = result.response.text();
 
@@ -291,6 +298,8 @@ export async function rewriteResume(resumeText, jobDescription = "", analysis = 
   const genAI = getClient();
   let lastError = null;
 
+  const safeResumeText = resumeText.length > 6000 ? resumeText.slice(0, 6000) : resumeText;
+
   for (const modelName of MODELS_TO_TRY) {
     try {
       console.log(`[ATS] Rewriting with ${modelName}...`);
@@ -304,8 +313,8 @@ export async function rewriteResume(resumeText, jobDescription = "", analysis = 
       });
 
       const prompt = isOldModel
-        ? `${REWRITE_SYSTEM_PROMPT}\n\n${REWRITE_PROMPT_TEMPLATE(resumeText, jobDescription, analysis, userAnswers)}`
-        : REWRITE_PROMPT_TEMPLATE(resumeText, jobDescription, analysis, userAnswers);
+        ? `${REWRITE_SYSTEM_PROMPT}\n\n${REWRITE_PROMPT_TEMPLATE(safeResumeText, jobDescription, analysis, userAnswers)}`
+        : REWRITE_PROMPT_TEMPLATE(safeResumeText, jobDescription, analysis, userAnswers);
       const result = await model.generateContent(prompt);
       const text = result.response.text();
       console.log(`[ATS] Rewrite success with ${modelName}`);
