@@ -7,7 +7,7 @@ import FileUpload from "./components/FileUpload";
 import JobDescInput from "./components/JobDescInput";
 import ResultsDashboard from "./components/ResultsDashboard";
 import Footer from "./components/Footer";
-import { analyzeResume } from "./services/gemini";
+import { analyzeResume } from "./services/groq";
 
 // How It Works steps
 const HOW_IT_WORKS = [

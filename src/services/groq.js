@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 
 // ─── System Prompts ───────────────────────────────────────────────────────────
 
@@ -96,8 +96,6 @@ Critical rules:
 9. Ensure phone numbers always include the international calling code prefix with a '+' sign (e.g., +91 9351874133).
 10. Ensure contact info is grouped cleanly at the top, and all bullet points start strictly with '• '`;
 
-// ─── Gap Identification Prompt ────────────────────────────────────────────────
-
 export const GAP_SYSTEM_PROMPT = `You are an expert ATS resume consultant. Your job is to identify SPECIFIC missing information gaps in a resume that, if provided by the candidate, would meaningfully improve their ATS score and make the rewritten resume more accurate and complete.
 
 Only ask for information that is truly missing and would realistically improve the resume. Do NOT fabricate or assume anything.`;
@@ -119,16 +117,18 @@ Identify 3-6 specific questions to ask the candidate that would fill in real gap
 - Missing dates, company descriptions, or role context
 - A professional summary if absent
 
-Respond ONLY with a valid JSON array of question objects — no markdown, no preamble:
-[
-  {
-    "id": "unique_id",
-    "category": "achievements|contact|skills|summary|structure",
-    "question": "Specific question to ask the candidate",
-    "example": "Example of what a good answer looks like",
-    "required": false
-  }
-]`;
+Respond ONLY with a valid JSON object containing an array called "questions" — no markdown, no preamble:
+{
+  "questions": [
+    {
+      "id": "unique_id",
+      "category": "achievements|contact|skills|summary|structure",
+      "question": "Specific question to ask the candidate",
+      "example": "Example of what a good answer looks like",
+      "required": false
+    }
+  ]
+}`;
 };
 
 export const REWRITE_PROMPT_TEMPLATE = (resumeText, jobDescription, analysis, userAnswers = {}) => {
@@ -138,21 +138,19 @@ export const REWRITE_PROMPT_TEMPLATE = (resumeText, jobDescription, analysis, us
         .filter(([, v]) => v && v.trim())
         .map(([k, v]) => `- ${k}: ${v}`)
         .join("\n")}
-
-IMPORTANT: Incorporate the above candidate-provided details naturally into the rewritten resume. These are real facts — use them.
-`
+Please incorporate these details into the rewritten resume appropriately.`
     : "";
 
-  return `ORIGINAL RESUME:
+  return `${hasJD ? `JOB DESCRIPTION (target role):\n${jobDescription}\n\n` : ""}ORIGINAL RESUME:
 ${resumeText}
 
-${hasJD ? `TARGET JOB DESCRIPTION:\n${jobDescription}\n\n` : `DETECTED ROLE: ${analysis?.detected_role || "Professional"}\n\n`}ATS ANALYSIS RESULTS:
+ATS ANALYSIS FEEDBACK TO FIX:
 - Overall Score: ${analysis?.overall_score}/100
 - Missing Keywords: ${analysis?.sections?.keyword_match?.missing_keywords?.join(", ") || "none"}
 - Weak Bullets: ${analysis?.sections?.impact_language?.weak_bullets?.join(" | ") || "none"}
 - Missing Sections: ${analysis?.sections?.section_structure?.missing_sections?.join(", ") || "none"}
-- Formatting Issues: ${analysis?.sections?.formatting?.issues?.join(", ") || "none"}
-${answersText}
+- Formatting Issues: ${analysis?.sections?.formatting?.issues?.join(", ") || "none"}${answersText}
+
 Rewrite the entire resume to fix all the above issues. Return ONLY clean plain text — no JSON, no markdown formatting.`;
 };
 
@@ -174,18 +172,16 @@ function cleanAndParseJSON(responseText) {
   }
 }
 
-// ─── Model Cascade ────────────────────────────────────────────────────────────
+// ─── Groq Configuration ──────────────────────────────────────────────────────────
 
-const MODELS_TO_TRY = [
-  "gemini-flash-latest"
-];
+const GROQ_MODEL = "llama-3.3-70b-versatile"; // Currently the best Groq model for speed & accuracy
 
 function getClient() {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey || apiKey === "your_gemini_api_key_here") {
-    throw new Error("Gemini API key is missing. Please add VITE_GEMINI_API_KEY to your .env file.");
+  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+  if (!apiKey || apiKey === "your_groq_api_key_here") {
+    throw new Error("Groq API key is missing. Please add VITE_GROQ_API_KEY to your .env file.");
   }
-  return new GoogleGenerativeAI(apiKey);
+  return new Groq({ apiKey, dangerouslyAllowBrowser: true });
 }
 
 // ─── Analyze Resume ───────────────────────────────────────────────────────────
@@ -195,92 +191,72 @@ export async function analyzeResume(resumeText, jobDescription = "") {
     throw new Error("Resume text is too short. Please check your file uploaded correctly.");
   }
 
-  const genAI = getClient();
+  const groq = getClient();
   let lastError = null;
 
-  for (const modelName of MODELS_TO_TRY) {
-    try {
-      console.log(`[ATS] Analyzing with ${modelName}...`);
-      const isOldModel = modelName === "gemini-pro";
-      const model = genAI.getGenerativeModel({
-        model: modelName,
-        systemInstruction: isOldModel ? undefined : ANALYZE_SYSTEM_PROMPT,
-        generationConfig: { 
-          responseMimeType: isOldModel ? "text/plain" : "application/json",
-          temperature: 0.0
-        },
-      });
+  try {
+    console.log(\`[ATS] Analyzing with Groq \${GROQ_MODEL}...\`);
+    
+    const prompt = ANALYZE_PROMPT_TEMPLATE(resumeText, jobDescription);
+    const completion = await groq.chat.completions.create({
+      messages: [
+        { role: "system", content: ANALYZE_SYSTEM_PROMPT },
+        { role: "user", content: prompt }
+      ],
+      model: GROQ_MODEL,
+      response_format: { type: "json_object" },
+      temperature: 0.0,
+    });
 
-      const prompt = isOldModel 
-        ? `${ANALYZE_SYSTEM_PROMPT}\n\n${ANALYZE_PROMPT_TEMPLATE(resumeText, jobDescription)}\n\nIMPORTANT: YOU MUST RETURN ONLY RAW JSON.`
-        : ANALYZE_PROMPT_TEMPLATE(resumeText, jobDescription);
-      const result = await model.generateContent(prompt);
-      const text = result.response.text();
-      const parsed = cleanAndParseJSON(text);
-      console.log(`[ATS] Success with ${modelName}. Score: ${parsed.overall_score}`);
-      return parsed;
-    } catch (err) {
-      console.warn(`[ATS] ${modelName} failed:`, err.message);
-      lastError = err;
-      
-      // Stop cascading for rate limits or auth errors
-      if (err.message?.includes("429") || err.message?.includes("quota") || err.message?.includes("403")) {
-        break;
-      }
-      
-      if (err.message?.includes("JSON format") || err.message?.includes("unexpected format")) {
-        throw err;
-      }
+    const text = completion.choices[0]?.message?.content || "";
+    const parsed = cleanAndParseJSON(text);
+    console.log(\`[ATS] Success with Groq. Score: \${parsed.overall_score}\`);
+    return parsed;
+  } catch (err) {
+    console.warn(\`[ATS] Groq failed:\`, err.message);
+    lastError = err;
+    if (err.message?.includes("JSON format") || err.message?.includes("unexpected format")) {
+      throw err;
     }
   }
 
   let msg = lastError?.message || "AI analysis failed.";
-  if (msg.includes("429") || msg.includes("quota")) msg = "API Rate Limit Reached! Google's Free Tier only allows 15 requests per minute. Please wait 60 seconds and try again.";
-  if (msg.includes("API key") || msg.includes("403")) msg = "Invalid API key. Please check your VITE_GEMINI_API_KEY in .env";
+  if (msg.includes("429") || msg.includes("rate limit")) msg = "Groq Rate Limit Reached! Please wait a few seconds and try again.";
+  if (msg.includes("API key") || msg.includes("401")) msg = "Invalid API key. Please check your VITE_GROQ_API_KEY in .env";
   throw new Error(msg);
 }
 
 // ─── Identify Missing Details ────────────────────────────────────────────
 
 export async function identifyMissingDetails(resumeText, jobDescription = "", analysis = null) {
-  const genAI = getClient();
+  const groq = getClient();
   let lastError = null;
 
-  for (const modelName of MODELS_TO_TRY) {
-    try {
-      console.log(`[ATS] Identifying gaps with ${modelName}...`);
-      const isOldModel = modelName === "gemini-pro";
-      const model = genAI.getGenerativeModel({
-        model: modelName,
-        systemInstruction: isOldModel ? undefined : GAP_SYSTEM_PROMPT,
-        generationConfig: { 
-          responseMimeType: isOldModel ? "text/plain" : "application/json",
-          temperature: 0.2
-        },
-      });
+  try {
+    console.log(\`[ATS] Identifying gaps with Groq...\`);
+    
+    const prompt = GAP_PROMPT_TEMPLATE(resumeText, jobDescription, analysis);
+    const completion = await groq.chat.completions.create({
+      messages: [
+        { role: "system", content: GAP_SYSTEM_PROMPT },
+        { role: "user", content: prompt }
+      ],
+      model: GROQ_MODEL,
+      response_format: { type: "json_object" },
+      temperature: 0.2,
+    });
 
-      const prompt = isOldModel
-        ? `${GAP_SYSTEM_PROMPT}\n\n${GAP_PROMPT_TEMPLATE(resumeText, jobDescription, analysis)}\n\nIMPORTANT: YOU MUST RETURN ONLY A RAW JSON ARRAY.`
-        : GAP_PROMPT_TEMPLATE(resumeText, jobDescription, analysis);
-      const result = await model.generateContent(prompt);
-      const text = result.response.text();
-
-      // Parse the JSON array
-      let cleaned = text.trim()
-        .replace(/^```json\s*/i, "").replace(/^```\s*/, "").replace(/\s*```$/, "").trim();
-      const parsed = JSON.parse(cleaned);
-      console.log(`[ATS] Gap identification found ${parsed.length} questions`);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (err) {
-      console.warn(`[ATS] Gap ID ${modelName} failed:`, err.message);
-      lastError = err;
-      if (err.message?.includes("429") || err.message?.includes("quota") || err.message?.includes("403")) {
-        break;
-      }
-    }
+    const text = completion.choices[0]?.message?.content || "";
+    const parsed = cleanAndParseJSON(text);
+    const questions = parsed.questions || [];
+    
+    console.log(\`[ATS] Gap identification found \${questions.length} questions\`);
+    return Array.isArray(questions) ? questions : [];
+  } catch (err) {
+    console.warn(\`[ATS] Gap ID Groq failed:\`, err.message);
+    lastError = err;
   }
 
-  // If gap identification fails, just proceed with rewrite (non-critical)
   console.warn("[ATS] Gap identification failed, skipping:", lastError?.message);
   return [];
 }
@@ -288,38 +264,31 @@ export async function identifyMissingDetails(resumeText, jobDescription = "", an
 // ─── Rewrite Resume ───────────────────────────────────────────────────────────
 
 export async function rewriteResume(resumeText, jobDescription = "", analysis = null, userAnswers = {}) {
-  const genAI = getClient();
+  const groq = getClient();
   let lastError = null;
 
-  for (const modelName of MODELS_TO_TRY) {
-    try {
-      console.log(`[ATS] Rewriting with ${modelName}...`);
-      const isOldModel = modelName === "gemini-pro";
-      const model = genAI.getGenerativeModel({
-        model: modelName,
-        systemInstruction: isOldModel ? undefined : REWRITE_SYSTEM_PROMPT,
-        generationConfig: {
-          temperature: 0.2
-        }
-      });
+  try {
+    console.log(\`[ATS] Rewriting with Groq...\`);
+    
+    const prompt = REWRITE_PROMPT_TEMPLATE(resumeText, jobDescription, analysis, userAnswers);
+    const completion = await groq.chat.completions.create({
+      messages: [
+        { role: "system", content: REWRITE_SYSTEM_PROMPT },
+        { role: "user", content: prompt }
+      ],
+      model: GROQ_MODEL,
+      temperature: 0.2,
+    });
 
-      const prompt = isOldModel
-        ? `${REWRITE_SYSTEM_PROMPT}\n\n${REWRITE_PROMPT_TEMPLATE(resumeText, jobDescription, analysis, userAnswers)}`
-        : REWRITE_PROMPT_TEMPLATE(resumeText, jobDescription, analysis, userAnswers);
-      const result = await model.generateContent(prompt);
-      const text = result.response.text();
-      console.log(`[ATS] Rewrite success with ${modelName}`);
-      return text.trim();
-    } catch (err) {
-      console.warn(`[ATS] Rewrite ${modelName} failed:`, err.message);
-      lastError = err;
-      if (err.message?.includes("429") || err.message?.includes("quota") || err.message?.includes("403")) {
-        break;
-      }
-    }
+    const text = completion.choices[0]?.message?.content || "";
+    console.log(\`[ATS] Rewrite success with Groq\`);
+    return text.trim();
+  } catch (err) {
+    console.warn(\`[ATS] Rewrite Groq failed:\`, err.message);
+    lastError = err;
   }
 
   let msg = lastError?.message || "Rewrite failed.";
-  if (msg.includes("429") || msg.includes("quota")) msg = "API Rate Limit Reached! Google's Free Tier only allows 15 requests per minute. Please wait 60 seconds and try again.";
+  if (msg.includes("429") || msg.includes("rate limit")) msg = "Groq Rate Limit Reached! Please wait a few seconds and try again.";
   throw new Error(msg);
 }

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Wand2, Copy, Download, Loader2, AlertCircle, Sparkles, RefreshCw, MessageSquarePlus, FileText } from "lucide-react";
-import { rewriteResume, identifyMissingDetails } from "../services/gemini";
+import { identifyMissingDetails, rewriteResume } from "../services/groq";
 import jsPDF from "jspdf";
 
 export default function RewriteSection({ resumeText, jobDescription, analysis, onRewriteComplete }) {

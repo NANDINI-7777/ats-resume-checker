@@ -12,6 +12,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "framer-motion": "^12.40.0",
+    "groq-sdk": "^1.2.1",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.18.0",
     "mammoth": "^1.12.0",
