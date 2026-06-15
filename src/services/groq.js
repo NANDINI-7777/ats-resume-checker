@@ -15,15 +15,15 @@ Rules:
 - Flag ATS-unfriendly formatting: tables, columns, headers with symbols/emojis, graphics, text boxes.
 - When no job description is provided, generate role-relevant keywords from industry standards for the detected profession.
 
-ATS SCORING ALGORITHM (CALCULATE THIS EXACTLY):
-Your `overall_score` MUST be the exact sum of these 5 categories:
-1. Keyword Match (Max 30 points): Start at 30. Subtract 3 points for every missing critical keyword.
-2. Impact Language (Max 25 points): Start at 25. Subtract 3 points for every bullet point that lacks numbers, metrics, or percentages.
-3. Formatting (Max 20 points): Start at 20. Subtract 10 points for columns or tables. Subtract 5 points for non-standard fonts/graphics.
-4. Section Structure (Max 15 points): Start at 15. Subtract 5 points for any missing standard section.
-5. Readability (Max 10 points): Start at 10. Subtract 2 points for typos or dense paragraphs.
+ATS SCORING ALGORITHM (100-POINT SCALE PER CATEGORY):
+You must score each of the 5 categories out of 100. Do NOT default to 90+. You MUST apply these brutal deductions:
+1. Keyword Match (0-100): Start at 100. Deduct 10 points for EVERY missing core keyword. If 5 keywords are missing, score is 50.
+2. Formatting (0-100): Start at 100. Deduct 30 points if tables/columns are used. Deduct 10 points for non-standard section headers. 
+3. Section Structure (0-100): Start at 100. Deduct 20 points for each missing standard section (Education, Experience, Skills).
+4. Impact Language (0-100): Start at 100. Deduct 10 points for EVERY bullet point that lacks numbers, %, or $. If 6 bullets lack numbers, score is 40.
+5. Readability (0-100): Start at 100. Deduct 10 points for typos or dense unreadable paragraphs.
 
-Do not artificially inflate the score. A typical resume has many unquantified bullets and missing keywords, so it should mathematically score between 45 and 65. Calculate the deductions honestly based on the flaws you find.`;
+Your `overall_score` MUST be the exact mathematical average of these 5 category scores. A typical unoptimized resume will average around 45 to 60. Do your math correctly and be ruthless.`;
 
 export const ANALYZE_PROMPT_TEMPLATE = (resumeText, jobDescription) => {
   const hasJD = jobDescription && jobDescription.trim().length > 50;
@@ -42,29 +42,29 @@ Respond ONLY with a valid JSON object — no markdown, no explanation, no preamb
   "verdict": "<one compelling sentence summary of the resume's ATS strength>",
   "sections": {
     "keyword_match": {
-      "score": <0-100>,
+      "score": <integer 0-100. Start at 100, subtract 10 per missing keyword>,
       "matched_keywords": ["keyword1", "keyword2"],
       "missing_keywords": ["keyword1", "keyword2"],
       "explanation": "<2-3 sentence ATS keyword analysis>"
     },
     "formatting": {
-      "score": <0-100>,
+      "score": <integer 0-100. Subtract 30 for tables/columns>,
       "issues": ["issue1", "issue2"],
       "explanation": "<2-3 sentence formatting analysis>"
     },
     "section_structure": {
-      "score": <0-100>,
+      "score": <integer 0-100. Subtract 20 per missing section>,
       "present_sections": ["section1", "section2"],
       "missing_sections": ["section1", "section2"],
       "explanation": "<2-3 sentence structure analysis>"
     },
     "impact_language": {
-      "score": <0-100>,
+      "score": <integer 0-100. Subtract 10 per unquantified bullet point>,
       "weak_bullets": ["bullet1", "bullet2"],
       "explanation": "<2-3 sentence impact language analysis>"
     },
     "readability": {
-      "score": <0-100>,
+      "score": <integer 0-100. Subtract 10 for dense paragraphs/typos>,
       "issues": [],
       "explanation": "<2-3 sentence readability analysis>"
     }
