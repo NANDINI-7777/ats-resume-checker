@@ -13,10 +13,17 @@ Your job is to evaluate a resume EXACTLY as a real ATS algorithm would — not a
 Rules:
 - Keyword matching is CASE-INSENSITIVE and MUST be literal. If a keyword is implied but not written exactly, it is MISSING.
 - Flag ATS-unfriendly formatting: tables, columns, headers with symbols/emojis, graphics, text boxes.
-- Check section names against ATS-expected labels (Work Experience, Education, Skills, Summary, Certifications).
-- Evaluate if bullets use strong action verbs with quantified results (numbers, $, %).
-- The "detected_role" should be the specific job title/profession you infer from the resume.
-- When no job description is provided, generate role-relevant keywords from industry standards for the detected profession.`;
+- When no job description is provided, generate role-relevant keywords from industry standards for the detected profession.
+
+ATS SCORING ALGORITHM (CALCULATE THIS EXACTLY):
+Your `overall_score` MUST be the exact sum of these 5 categories:
+1. Keyword Match (Max 30 points): Start at 30. Subtract 3 points for every missing critical keyword.
+2. Impact Language (Max 25 points): Start at 25. Subtract 3 points for every bullet point that lacks numbers, metrics, or percentages.
+3. Formatting (Max 20 points): Start at 20. Subtract 10 points for columns or tables. Subtract 5 points for non-standard fonts/graphics.
+4. Section Structure (Max 15 points): Start at 15. Subtract 5 points for any missing standard section.
+5. Readability (Max 10 points): Start at 10. Subtract 2 points for typos or dense paragraphs.
+
+Do not artificially inflate the score. A typical resume has many unquantified bullets and missing keywords, so it should mathematically score between 45 and 65. Calculate the deductions honestly based on the flaws you find.`;
 
 export const ANALYZE_PROMPT_TEMPLATE = (resumeText, jobDescription) => {
   const hasJD = jobDescription && jobDescription.trim().length > 50;
