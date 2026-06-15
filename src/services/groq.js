@@ -195,7 +195,7 @@ export async function analyzeResume(resumeText, jobDescription = "") {
   let lastError = null;
 
   try {
-    console.log(\`[ATS] Analyzing with Groq \${GROQ_MODEL}...\`);
+    console.log(`[ATS] Analyzing with Groq ${GROQ_MODEL}...`);
     
     const prompt = ANALYZE_PROMPT_TEMPLATE(resumeText, jobDescription);
     const completion = await groq.chat.completions.create({
@@ -210,10 +210,10 @@ export async function analyzeResume(resumeText, jobDescription = "") {
 
     const text = completion.choices[0]?.message?.content || "";
     const parsed = cleanAndParseJSON(text);
-    console.log(\`[ATS] Success with Groq. Score: \${parsed.overall_score}\`);
+    console.log(`[ATS] Success with Groq. Score: ${parsed.overall_score}`);
     return parsed;
   } catch (err) {
-    console.warn(\`[ATS] Groq failed:\`, err.message);
+    console.warn(`[ATS] Groq failed:`, err.message);
     lastError = err;
     if (err.message?.includes("JSON format") || err.message?.includes("unexpected format")) {
       throw err;
@@ -233,7 +233,7 @@ export async function identifyMissingDetails(resumeText, jobDescription = "", an
   let lastError = null;
 
   try {
-    console.log(\`[ATS] Identifying gaps with Groq...\`);
+    console.log(`[ATS] Identifying gaps with Groq...`);
     
     const prompt = GAP_PROMPT_TEMPLATE(resumeText, jobDescription, analysis);
     const completion = await groq.chat.completions.create({
@@ -250,10 +250,10 @@ export async function identifyMissingDetails(resumeText, jobDescription = "", an
     const parsed = cleanAndParseJSON(text);
     const questions = parsed.questions || [];
     
-    console.log(\`[ATS] Gap identification found \${questions.length} questions\`);
+    console.log(`[ATS] Gap identification found ${questions.length} questions`);
     return Array.isArray(questions) ? questions : [];
   } catch (err) {
-    console.warn(\`[ATS] Gap ID Groq failed:\`, err.message);
+    console.warn(`[ATS] Gap ID Groq failed:`, err.message);
     lastError = err;
   }
 
@@ -268,7 +268,7 @@ export async function rewriteResume(resumeText, jobDescription = "", analysis = 
   let lastError = null;
 
   try {
-    console.log(\`[ATS] Rewriting with Groq...\`);
+    console.log(`[ATS] Rewriting with Groq...`);
     
     const prompt = REWRITE_PROMPT_TEMPLATE(resumeText, jobDescription, analysis, userAnswers);
     const completion = await groq.chat.completions.create({
@@ -281,10 +281,10 @@ export async function rewriteResume(resumeText, jobDescription = "", analysis = 
     });
 
     const text = completion.choices[0]?.message?.content || "";
-    console.log(\`[ATS] Rewrite success with Groq\`);
+    console.log(`[ATS] Rewrite success with Groq`);
     return text.trim();
   } catch (err) {
-    console.warn(\`[ATS] Rewrite Groq failed:\`, err.message);
+    console.warn(`[ATS] Rewrite Groq failed:`, err.message);
     lastError = err;
   }
 
