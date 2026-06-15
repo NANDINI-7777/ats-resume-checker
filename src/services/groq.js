@@ -16,16 +16,7 @@ Rules:
 - Check section names against ATS-expected labels (Work Experience, Education, Skills, Summary, Certifications).
 - Evaluate if bullets use strong action verbs with quantified results (numbers, $, %).
 - The "detected_role" should be the specific job title/profession you infer from the resume.
-- When no job description is provided, generate role-relevant keywords from industry standards for the detected profession.
-
-SCORING ALGORITHM (STRICT & REALISTIC):
-- ATS systems are strict. You must score realistically like a corporate ATS bot.
-- Start at a baseline score of 45 (NOT 100).
-- Add points (+2 to +5) for perfectly matched keywords and strong quantified impact.
-- Deduct points (-5 to -10) for missing core keywords, weak unquantified bullets, or bad formatting.
-- Average resumes with some flaws MUST score between 50 and 65 (A score of 52 is very common).
-- DO NOT give any score above 75 unless the resume is a near-perfect match for the role.
-- Be highly critical but mathematically fair. Match the strictness of standard enterprise ATS filters.`;
+- When no job description is provided, generate role-relevant keywords from industry standards for the detected profession.`;
 
 export const ANALYZE_PROMPT_TEMPLATE = (resumeText, jobDescription) => {
   const hasJD = jobDescription && jobDescription.trim().length > 50;
