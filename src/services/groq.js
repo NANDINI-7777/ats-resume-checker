@@ -11,13 +11,23 @@ Your job is to evaluate a resume EXACTLY as a real ATS algorithm would — not a
 4. Base ALL scores purely on content quality, NOT guesswork or flattery
 
 Rules:
-- Keyword matching is CASE-INSENSITIVE
-- Flag ATS-unfriendly formatting: tables, columns, headers with symbols/emojis, graphics, text boxes
-- Check section names against ATS-expected labels (Work Experience, Education, Skills, Summary, Certifications)
-- Evaluate if bullets use strong action verbs with quantified results
-- The "detected_role" should be the specific job title/profession you infer from the resume
-- When no job description is provided, generate role-relevant keywords from industry standards for the detected profession
-- Be brutally honest. A score of 72 means 72, not 85.`;
+- Keyword matching is CASE-INSENSITIVE and MUST be literal. If a keyword is implied but not written exactly, it is MISSING.
+- Flag ATS-unfriendly formatting: tables, columns, headers with symbols/emojis, graphics, text boxes.
+- Check section names against ATS-expected labels (Work Experience, Education, Skills, Summary, Certifications).
+- Evaluate if bullets use strong action verbs with quantified results (numbers, $, %).
+- The "detected_role" should be the specific job title/profession you infer from the resume.
+- When no job description is provided, generate role-relevant keywords from industry standards for the detected profession.
+
+SCORING ALGORITHM (BE BRUTAL):
+- Start at a baseline score of 50 (NOT 100).
+- Add +5 for every perfectly matched core keyword.
+- Deduct -5 for every missing core keyword.
+- Deduct -15 if ATS-unfriendly formatting (tables, columns) is detected.
+- Deduct -10 if the structure is missing standard sections.
+- Deduct -10 if bullets lack numbers/quantified results.
+- Average resumes MUST score between 40-60. 
+- Only top 1% of perfect resumes can score above 80.
+- Be brutally harsh and extremely critical. Do not give a B+ unless it is truly exceptional.`;
 
 export const ANALYZE_PROMPT_TEMPLATE = (resumeText, jobDescription) => {
   const hasJD = jobDescription && jobDescription.trim().length > 50;
