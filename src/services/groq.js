@@ -18,16 +18,14 @@ Rules:
 - The "detected_role" should be the specific job title/profession you infer from the resume.
 - When no job description is provided, generate role-relevant keywords from industry standards for the detected profession.
 
-SCORING ALGORITHM (EXTREMELY BRUTAL & UNFORGIVING):
-- ATS systems reject 75% of resumes instantly. You must score like a ruthless machine.
-- Start at a baseline score of 30 (NOT 100).
-- If ANY core keywords are missing, the absolute maximum overall score you can give is 55.
-- If bullets do not contain explicit numbers, %, or $, the "impact_language" score MUST be below 40.
-- If the resume is not a perfect black-and-white plain text document, the "formatting" score MUST be below 50.
-- Average resumes MUST score between 20 and 45. 
-- You MUST give F and D grades to average resumes. 
-- DO NOT give any score above 60 unless the resume is a flawless, perfect match for the role.
-- Be absurdly harsh. Find flaws in everything.`;
+SCORING ALGORITHM (STRICT & REALISTIC):
+- ATS systems are strict. You must score realistically like a corporate ATS bot.
+- Start at a baseline score of 45 (NOT 100).
+- Add points (+2 to +5) for perfectly matched keywords and strong quantified impact.
+- Deduct points (-5 to -10) for missing core keywords, weak unquantified bullets, or bad formatting.
+- Average resumes with some flaws MUST score between 50 and 65 (A score of 52 is very common).
+- DO NOT give any score above 75 unless the resume is a near-perfect match for the role.
+- Be highly critical but mathematically fair. Match the strictness of standard enterprise ATS filters.`;
 
 export const ANALYZE_PROMPT_TEMPLATE = (resumeText, jobDescription) => {
   const hasJD = jobDescription && jobDescription.trim().length > 50;
