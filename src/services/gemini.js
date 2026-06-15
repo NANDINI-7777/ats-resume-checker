@@ -27,7 +27,7 @@ ${jobDescription}
 ` : "NOTE: No job description was provided. Analyze this resume based on the detected profession and industry-standard ATS requirements for that role.\n\n"}RESUME TEXT:
 ${resumeText}
 
-Respond ONLY with a valid JSON object — no markdown, no explanation, no preamble. Keep explanations concise (1-2 sentences). Limit all arrays (e.g. keywords, issues, bullets) to a MAXIMUM of 5 items to ensure fast processing. Exactly match this schema:
+Respond ONLY with a valid JSON object — no markdown, no explanation, no preamble. Keep explanations concise (1-2 sentences), but be comprehensively accurate with your analysis arrays. Exactly match this schema:
 {
   "detected_role": "<profession/role title detected from resume>",
   "analysis_mode": "${hasJD ? "jd_specific" : "profession_based"}",
