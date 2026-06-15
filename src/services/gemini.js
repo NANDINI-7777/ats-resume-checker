@@ -27,7 +27,7 @@ ${jobDescription}
 ` : "NOTE: No job description was provided. Analyze this resume based on the detected profession and industry-standard ATS requirements for that role.\n\n"}RESUME TEXT:
 ${resumeText}
 
-Respond ONLY with a valid JSON object — no markdown, no explanation, no preamble — exactly matching this schema:
+Respond ONLY with a valid JSON object — no markdown, no explanation, no preamble. Keep explanations concise (1-2 sentences). Limit all arrays (e.g. keywords, issues, bullets) to a MAXIMUM of 5 items to ensure fast processing. Exactly match this schema:
 {
   "detected_role": "<profession/role title detected from resume>",
   "analysis_mode": "${hasJD ? "jd_specific" : "profession_based"}",
@@ -208,7 +208,8 @@ export async function analyzeResume(resumeText, jobDescription = "") {
         systemInstruction: isOldModel ? undefined : ANALYZE_SYSTEM_PROMPT,
         generationConfig: { 
           responseMimeType: isOldModel ? "text/plain" : "application/json",
-          temperature: 0.0 
+          temperature: 0.0,
+          maxOutputTokens: 1024
         },
       });
 
@@ -256,7 +257,8 @@ export async function identifyMissingDetails(resumeText, jobDescription = "", an
         systemInstruction: isOldModel ? undefined : GAP_SYSTEM_PROMPT,
         generationConfig: { 
           responseMimeType: isOldModel ? "text/plain" : "application/json",
-          temperature: 0.2 
+          temperature: 0.2,
+          maxOutputTokens: 1024
         },
       });
 
@@ -300,7 +302,8 @@ export async function rewriteResume(resumeText, jobDescription = "", analysis = 
         model: modelName,
         systemInstruction: isOldModel ? undefined : REWRITE_SYSTEM_PROMPT,
         generationConfig: {
-          temperature: 0.2
+          temperature: 0.2,
+          maxOutputTokens: 2048
         }
       });
 
