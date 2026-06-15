@@ -177,8 +177,7 @@ function cleanAndParseJSON(responseText) {
 // ─── Model Cascade ────────────────────────────────────────────────────────────
 
 const MODELS_TO_TRY = [
-  "gemini-flash-latest",
-  "gemini-1.5-flash"
+  "gemini-flash-latest"
 ];
 
 function getClient() {
